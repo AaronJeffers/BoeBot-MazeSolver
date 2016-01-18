@@ -1,0 +1,690 @@
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+' MazeSolver.v.1.8.2.bs2
+' Aaron Jeffers. DEC 2015.
+
+'--------------[ Variables ]---------------------
+
+myQTIs                 VAR Nib                  ' Stores QTI sensor states. 0 means white surface, "1" means black.
+middleQTIs             VAR Bit                  ' Stores middle QTI states.
+mLeftQTI               VAR Bit                  ' Stores middle left QTI state.
+mRightQTI              VAR Bit                  ' Stores middle right QTI state.
+outsideQTIs            VAR Bit                  ' Stores outside QTI states.
+oLeftQTI               VAR Bit                  ' Stores outside left QTI state.
+oRightQTI              VAR Bit                  ' Stores outside right QTI state.
+
+addr                   VAR Byte                 ' Current EEPROM address.
+counter                VAR Byte                 ' Counter variable.
+numOfSteps             VAR Byte                 ' Stores number of steps required to solve maze.
+
+currentTurn            VAR Nib                  ' Variable for current turn stored in EEPROM.
+lastTurn               VAR Nib                  ' Variable for the last turn stored in EEPROM.
+turnBeforeLast         VAR Nib                  ' Variable for the turn before the last turn stored in EEPROM.
+                                                ' Turns will be stored in the following format:
+                                                ' U-Turn       =    0
+                                                ' Left         =    4
+                                                ' Right        =    8
+                                                ' Straight     =   12
+                                                ' Finished     =    2
+
+currentIntersection    VAR Nib                  ' Variables of all intersection possibilities. "_" indicates constants.
+_leftTurn              CON 1
+_rightTurn             CON 2
+_Tee                   CON 3
+_fourWay               CON 4
+_straightOrLeft        CON 5
+_straightOrRight       CON 6
+_deadEnd               CON 7
+_finishLine            CON 8
+
+mode                   VAR Nib                  ' Variable for mode selection.
+method                 VAR Bit                  ' Is a "0" if using left hand method and a "1" if using right hand method.
+buttonPressedLength    VAR Byte                 ' Variable for how long the button is pressed.
+
+'---------------------------------[ Setup ]-----------------------------------------
+
+FREQOUT 4, 1000, 3000                           ' Signal start of program.
+
+OUTC    = %1111                                 ' Set OUTC bits to 1.
+myQTIs  = %0110                                 ' Start on line.
+addr    = 1                                     ' Begin with first address.
+
+currentIntersection   = 0                       ' Set inital variable states.
+currentTurn           = 0
+mode                  = 0
+method                = 0
+
+'----------------------------------[ Main ]-------------------------------------------
+
+' Main DO...LOOP
+
+' *--- Select between four different modes.
+DO
+
+  GOSUB SelectMode
+
+LOOP
+
+
+
+'------------------------------[ Subroutines ]------------------------------------------
+
+' *--- Maze search mode. Robot will search the maze until it finds the finish line.
+SearchMaze:
+
+    GOSUB GoUntilIntersection
+
+    GOSUB IdentifyIntersection
+
+    GOSUB ActOnIntersection
+
+RETURN
+
+' *--- Move along a line until we find an intersection.
+GoUntilIntersection:
+
+  DO UNTIL (outsideQTIs = 1) OR (myQTIs = %0000)
+    GOSUB ContinueOnLine
+  LOOP
+
+RETURN
+
+' *--- Determine what kind of intersection the boebot stopped at. Store information in "currentIntersection" variable.
+'
+'                              currentIntersection
+' _leftTurn                =            1
+' _rightTurn               =            2
+' _Tee                     =            3
+' _fourWay                 =            4
+' _straightOrLeft          =            5
+' _straightOrRight         =            6
+' _deadEnd                 =            7
+' _finishLine              =            8
+IdentifyIntersection:
+
+  ' Update latest QTI info.
+  GOSUB updateQTIs
+
+  ' Depending on the reading from myQTIs, determine the intersection. Doublecheck if nessesary.
+  SELECT  myQTIs
+    CASE %0000
+      currentIntersection = _deadEnd
+      GOSUB Beep4
+    CASE %0001
+      currentIntersection = _rightTurn
+      GOSUB DoubleCheckRightTurn
+    CASE %0010
+      currentIntersection = 0
+    CASE %0011
+      currentIntersection = _rightTurn
+      GOSUB DoubleCheckRightTurn
+    CASE %0100
+      currentIntersection = 0
+    CASE %0101
+      currentIntersection = _rightTurn
+      GOSUB DoubleCheckRightTurn
+    CASE %0110
+      currentIntersection = 0
+    CASE %0111
+      currentIntersection = _rightTurn
+      GOSUB DoubleCheckRightTurn
+    CASE %1000
+      currentIntersection = _leftTurn
+      GOSUB DoubleCheck_leftTurn
+    CASE %1001
+      currentIntersection = _Tee
+      GOSUB DoubleCheckFourWay
+    CASE %1010
+      currentIntersection = _leftTurn
+      GOSUB DoubleCheck_leftTurn
+    CASE %1011
+      currentIntersection = _fourWay
+      GOSUB DoubleCheckFourWay
+    CASE %1100
+      currentIntersection = _leftTurn
+      GOSUB DoubleCheck_leftTurn
+    CASE %1101
+      currentIntersection = _fourWay
+      GOSUB DoubleCheckFourWay
+    CASE %1110
+      currentIntersection = _leftTurn
+      GOSUB DoubleCheck_leftTurn
+    CASE %1111
+      currentIntersection = _fourWay
+      GOSUB DoubleCheckFourWay
+  ENDSELECT
+RETURN
+
+' *--- Move forward one inch to identify if this is a left turn only or if going straight is also possible.
+DoubleCheck_leftTurn:
+
+  ' Turn left LED on.
+  HIGH 4
+
+  GOSUB MoveForwardAnInch
+  GOSUB UpdateQTIs
+
+  ' Shut left LED off.
+  LOW 4
+
+  ' If the boebot can also go straight.
+  IF (middleQTIs = 1) THEN
+    currentIntersection = _straightOrLeft
+    HIGH 4
+    HIGH 1
+    GOSUB Beep3
+    LOW 4
+    LOW 1
+  ELSE
+    GOSUB Beep2
+  ENDIF
+RETURN
+
+' *--- Move forward one inch to identify if this is a right turn only or if going straight is also possible.
+DoubleCheckRightTurn:
+
+  ' Turn right LED on.
+  HIGH 1
+
+  GOSUB MoveForwardAnInch
+  GOSUB UpdateQTIs
+
+  ' Shut right LED off.
+  LOW 1
+
+  ' If the boebot can also go straight.
+  IF (middleQTIs = 1) THEN
+    currentIntersection = _straightOrRight
+    HIGH 4
+    HIGH 1
+    GOSUB Beep3
+    LOW 4
+    LOW 1
+  ELSE
+    GOSUB Beep2
+  ENDIF
+RETURN
+
+' *--- Move forward one inch to identify if this is a four-way, tee or the finish line.
+DoubleCheckFourWay:
+
+  ' Turn LEDs on.
+  HIGH 4
+  HIGH 1
+
+  GOSUB MoveForwardAnInch
+  GOSUB UpdateQTIs
+
+  ' Shut LEDs off.
+  LOW 4
+  LOW 1
+
+  IF (myQTIs = %1111) THEN
+    currentIntersection = _finishLine
+  ELSEIF (myQTIs = %0000) THEN
+    currentIntersection = _Tee
+  ELSE
+    HIGH 4
+    HIGH 1
+    LOW 4
+    LOW 1
+  ENDIF
+  GOSUB Beep3
+RETURN
+
+' *--- Read "currentIntersection" variable and perform correct action on intersection.
+ActOnIntersection:
+
+  DEBUG ? currentIntersection  ' For debugging.
+
+  IF (currentIntersection = 0) THEN ' Should not be possible, just in case.
+    GOSUB SearchMaze
+  ELSEIF (currentIntersection = _leftTurn) THEN
+    GOSUB PivotLeft
+    GOSUB SearchMaze
+  ELSEIF (currentIntersection = _rightTurn) THEN
+    GOSUB PivotRight
+    GOSUB SearchMaze
+  ELSEIF (currentIntersection = _straightOrLeft) THEN
+    ' If left hand method.
+    IF (method = 0) THEN
+      GOSUB PivotLeft
+      currentTurn = 4 ' 4 = Left
+    ELSE
+    ' If right hand method.
+      currentTurn = 8 ' 8 = Straight
+    ENDIF
+    GOSUB RecordMove
+    GOSUB SearchMaze
+  ELSEIF (currentIntersection = _fourWay) THEN
+    ' If left hand method.
+    IF (method = 0) THEN
+      GOSUB PivotLeft
+      currentTurn = 4 ' 4 = Left
+    ELSE
+    ' If right hand method.
+      GOSUB PivotRight
+      currentTurn = 12 ' 12 = Right
+    ENDIF
+    GOSUB RecordMove
+    GOSUB SearchMaze
+  ELSEIF (currentIntersection = _Tee) THEN
+    ' If left hand method.
+    IF (method = 0) THEN
+      GOSUB PivotLeft
+      currentTurn = 4 ' 4 = Left
+    ELSE
+    ' If right hand method.
+      GOSUB PivotRight
+      currentTurn = 12 ' 12 = Right
+    ENDIF
+    GOSUB RecordMove
+    GOSUB SearchMaze
+  ELSEIF (currentIntersection = _straightOrRight) THEN
+    ' If left hand method.
+    IF (method = 0) THEN
+      currentTurn = 8 ' 8 = Straight
+    ELSE
+    ' If right hand method.
+      GOSUB PivotRight
+      currentTurn = 12 ' 12 = Right
+    ENDIF
+    GOSUB RecordMove
+    GOSUB SearchMaze
+  ELSEIF (currentIntersection = _deadEnd) THEN
+    ' If left hand method.
+    IF (method = 0) THEN
+      GOSUB PivotRight
+      currentTurn = 0 ' 0 = U-turn
+    ELSE
+    ' If right hand method.
+      GOSUB PivotLeft
+      currentTurn = 0 ' 0 = U-turn
+    ENDIF
+    GOSUB RecordMove
+    GOSUB SearchMaze
+  ELSEIF (currentIntersection = _finishLine) THEN
+    currentTurn = 2 ' 2 = Finished!
+    GOSUB RecordMove
+    GOSUB Beep5
+    GOSUB SelectMode
+  ENDIF
+RETURN
+
+' *--- Maze solving mode.
+SolveMaze:
+
+  ' Reset address.
+  addr = 1
+  ' Address 0 stores the number of steps required to solve the maze.
+  READ 0, numOfSteps
+
+  ' Update QTI data
+  GOSUB updateQTIs
+
+  ' Do this until the BoeBot reaches the finish line.
+  DO
+    GOSUB GoUntilIntersection
+    GOSUB IdentifyIntersection
+
+    IF (currentIntersection = _leftTurn) THEN
+      GOSUB PivotLeft
+    ELSEIF (currentIntersection = _rightTurn) THEN
+      GOSUB PivotRight
+    ELSE
+      ' Read correct turn that needs to be made.
+      READ addr, currentTurn
+      ' Go to next address.
+      addr = addr + 1
+
+      SELECT currentTurn
+        CASE 4 ' If left turn.
+          GOSUB PivotLeft
+        CASE 12 ' If right turn.
+          GOSUB PivotRight
+        CASE 2 ' If finsh line.
+          GOSUB Beep5
+          GOSUB SelectMode
+      ENDSELECT
+    ENDIF
+  LOOP
+RETURN
+
+' *--- Record the move we made to EEPROM. If U-turn, disregard and make corrections.
+'
+'      Corrections to be made:
+'      U = U-Turn = 0         L = Left = 4         S = Straight = 8         R = Right = 12
+
+'      L      U      L   =   S          =>           4   +  0  +   4   =   8
+'      L      U      S   =   R          =>           4   +  0  +   8   =  12
+'      L      U      R   =   U          =>           4   +  0  +  12   =   0
+'      S      U      L   =   R          =>           8   +  0  +   4   =  12
+'      S      U      S   =   U          =>           8   +  0  +   8   =   0
+'      S      U      R   =   L          =>           8   +  0  +  12   =   4
+'      R      U      L   =   U          =>          12   +  0  +   4   =   0
+'      R      U      S   =   L          =>          12   +  0  +   8   =   4
+'      R      U      R   =   S          =>          12   +  0  +  12   =   8
+'      U      U      L   =   L          =>           0   +  0  +   4   =   4
+'      U      U      S   =   S          =>           0   +  0  +   8   =   8
+'      U      U      R   =   R          =>           0   +  0  +  12   =  12
+RecordMove:
+
+  ' Write current address
+  WRITE addr, currentTurn
+
+  ' If more than 3 moves stored:
+  IF (addr >= 3) THEN
+    ' Read the last three moves.
+    READ addr, currentTurn
+    READ addr -1, lastTurn
+    READ addr -2, turnBeforeLast
+
+    ' We need to see if the previous turn was a U-turn.
+    ' If it was. Go back 2 moves and make corrections.
+    IF (lastTurn = 0) THEN
+      addr = addr - 2
+      ' Add the numeric value of the turns made before and after the u-turn.
+      currentTurn = turnBeforeLast + currentTurn
+      WRITE addr, currentTurn
+    ENDIF
+  ENDIF
+  ' Advance to the next address.
+  IF (currentTurn <> 2) THEN
+    addr = addr + 1
+  ENDIF
+  ' Update the final address value.
+  numOfSteps  = addr
+  WRITE 0, numOfSteps
+RETURN
+
+SelectMode:
+
+  DO
+    ' Wait for button 2 to be pressed.
+    IF (IN3 = 0)  THEN
+      ' Then wait for it to be released.
+      DO UNTIL (IN3 = 1)
+        PAUSE 100
+      LOOP
+      ' Switch to next mode
+      mode = mode + 1
+      IF (mode = 4) THEN
+        mode = 0
+      ENDIF
+    ENDIF
+
+    ' Display current mode.
+    IF (mode = 0) THEN
+      method = 0
+      HIGH 4
+      LOW 1
+    ELSEIF (mode = 1) THEN
+      method = 1
+      HIGH 1
+      LOW 4
+    ELSEIF (mode = 2) THEN
+      HIGH 1
+      HIGH 4
+    ELSEIF (mode = 3) THEN
+      LOW 1
+      LOW 4
+    ENDIF
+
+    ' Wait for button 1 to be pressed.
+    IF (IN2 = 0) THEN
+      ' Then wait for it to be released.
+      DO UNTIL (IN2 = 1)
+        PAUSE 50
+      LOOP
+      ' Start selected mode.
+      IF (mode = 0) OR (mode = 1) THEN
+        GOSUB SearchMaze
+      ELSEIF (mode = 2) THEN
+        GOSUB SolveMaze
+      ELSEIF (mode = 3) THEN
+        GOSUB PrintSolution
+      ENDIF
+    ENDIF
+  LOOP
+RETURN
+
+' *--- Print the maze solution for debuging.
+PrintSolution:
+
+  READ 0, numOfSteps
+  DEBUG ? numOfSteps
+
+  FOR counter = 1 TO numOfSteps
+    READ counter, currentTurn
+    DEBUG ? currentTurn
+
+    IF (currentTurn = 2) THEN
+      GOSUB Beep4
+    ELSEIF(currentTurn = 4) THEN
+      HIGH 4
+      LOW 1
+      PAUSE 2000
+    ELSEIF (currentTurn = 8) THEN
+      HIGH 1
+      HIGH 4
+      PAUSE 2000
+    ELSEIF (currentTurn = 12) THEN
+      HIGH 1
+      LOW 4
+      PAUSE 2000
+    ENDIF
+
+    LOW 1
+    LOW 4
+    PAUSE 500
+  NEXT
+RETURN
+
+'----------------------------[ QTI commands. ]---------------------------------------------------------------
+'Throuout the progam we need information back from the QTIs. Often we need specific info like; Did either outside sensor
+'see a 1? The following subroutines look at the information we get from the QTIs and package it into useful variables.
+'Another option would be to read each sensor individually as it is needed, but this would slow down the overall speed of
+'the boebot.
+
+'QTI input possibilities and what each variable would be set to:
+
+                 '0      1      2      3      4      5      6      7      8      9     10     11     12     13     14     15
+'myQTIs        %0000  %0001  %0010  %0011  %0100  %0101  %0110  %0111  %1000  %1001  %1010  %1011  %1100  %1101  %1110  %1111
+'middleQTIs        0      0      1      1      1      1      1      1      0      0      1      1      1      1      1      1
+'mLeftQTI          0      0      0      0      1      1      1      1      0      0      0      0      1      1      1      1
+'mRightQTI         0      0      1      1      0      0      1      1      0      0      1      1      0      0      1      1
+'outsideQTIs       0      1      0      1      0      1      0      1      1      1      1      1      1      1      1      1
+'oLeftQTI          0      0      0      0      0      0      0      0      1      1      1      1      1      1      1      1
+'oRightQTI         0      1      0      1      0      1      0      1      0      1      0      1      0      1      0      1
+
+' *--- Use the QTIs to set myQTIs variable. 0 means white surface, 1 means black surface.
+UpdateQTIs:
+
+  DIRC = %1111                  ' Sets P11..P8 to output so the QTIs capacitors can charge.
+  PAUSE 0                       ' Pause for 0 is actually 230 micro sec. Enough time for caps to charge.
+  DIRC = %0000                  ' sets P11..P8 to input.
+  PAUSE 0                       ' Pause for 0 is actually 230 micro sec.
+  myQTIs = INC                  ' Store QTI outputs in INC
+
+  GOSUB CheckMiddleQTIs
+  GOSUB CheckOutsideQTIs
+RETURN
+
+' *--- Set middleQTIs variable to 1 if either middle bits are 1.
+'      Set mLeftQTI variable to 1 if middle left QTI is 1. (ex. %0100)
+'      Set mRightQTI variable to 1 if middle right QTI is 1. (ex. %0010)
+CheckMiddleQTIs:
+
+  ' Reset variables.
+  middleQTIs = 0
+  mLeftQTI = 0
+  mRightQTI = 0
+
+  IF (myQTIs.BIT2 = 1) THEN
+    middleQTIs = 1
+    mLeftQTI = 1
+  ENDIF
+  IF (myQTIs.BIT1 = 1) THEN
+    middleQTIs = 1
+    mRightQTI = 1
+  ENDIF
+RETURN
+
+' *--- Set outsideQTIs variable to 1 if either outside bits are 1.
+'      Set oLeftQTI variable to 1 if outside left QTI is 1. (ex. %1000)
+'      Set oRightQTI variable to 1 if outside right QTI is 1. (ex. %0001)
+CheckOutsideQTIs:
+
+  ' Reset variables.
+  outsideQTIs = 0
+  oLeftQTI = 0
+  oRightQTI = 0
+
+  IF (myQTIs.BIT0 = 1) THEN
+    outsideQTIs = 1
+    oLeftQTI = 1
+  ENDIF
+  IF (myQTIs.BIT3 = 1) THEN
+    outsideQTIs = 1
+    oRightQTI = 1
+  ENDIF
+RETURN
+
+'--------------------------------[ Basic one pulse movements. ]------------------------------------------------
+'------------------------------[ All other movements use these. ]----------------------------------------------
+
+' *--- Go derectly forward one pulse.
+StepForward:
+
+  PULSOUT 13, 850                         ' Left.
+  PULSOUT 12, 650                         ' Right.
+  PAUSE 20
+RETURN
+
+' *--- Forward/Left one pulse. Used when folloing a line.
+StepLeft:
+
+  PULSOUT 13, 770
+  PULSOUT 12, 650
+  PAUSE 20
+RETURN
+
+' *--- Forward/Right one pulse. Used when folloing a line.
+StepRight:
+
+  PULSOUT 13, 850
+  PULSOUT 12, 730
+  PAUSE 20
+RETURN
+
+' *--- Spin left one pulse. Used when turning on an intersection.
+TurnLeft:
+
+  PULSOUT 13, 650
+  PULSOUT 12, 650
+  PAUSE 20
+RETURN
+
+' *--- Spin right one pulse. Used when turning on an intersection.
+TurnRight:
+
+  PULSOUT 13, 850
+  PULSOUT 12, 850
+  PAUSE 20
+RETURN
+
+'--------------------------------------[ Advanced movements. ]---------------------------------------------------
+
+' *--- Continue forward staying on line of tape, adjusting as nessesary. One pulse at a time.
+ContinueOnLine:
+
+  'GOSUB UpdateQTIs
+
+  IF (mLeftQTI = 1) AND (mRightQTI = 1) THEN
+    GOSUB StepForward
+  ELSEIF (mLeftQTI = 1) THEN
+    GOSUB StepLeft
+  ELSEIF (mRightQTI = 1) THEN
+    GOSUB StepRight
+  ENDIF
+  ' Update QTIs will be at the end of the movement so other subroutines can use latest info.
+  GOSUB UpdateQTIs
+RETURN
+
+' *--- Move directly forward one inch disregarding if there is a line or not. Used when double checking an intersection.
+MoveForwardAnInch:
+
+  FOR counter = 1 TO 7
+    GOSUB StepForward
+  NEXT
+RETURN
+
+' *--- Spin left until middle QTIs are matched up with the line.
+PivotLeft:
+
+  ' Turn left about 45 degrees so the middle QTIs dont see a line.
+  FOR counter = 1 TO 10
+    GOSUB TurnLeft
+  NEXT
+
+  ' Set middleQTIs to 0 manually so the following code executes at least once.
+  middleQTIs = 0
+  DO UNTIL (middleQTIs = 1)
+    GOSUB TurnLeft
+    GOSUB UpdateQTIs
+  LOOP
+RETURN
+
+' *--- Spin right until middle QTIs are matched up with the line.
+PivotRight:
+
+  ' Turn right about 45 degrees so the middle QTIs dont see a line.
+  FOR counter = 1 TO 10
+    GOSUB TurnRight
+  NEXT
+
+  ' Set middleQTIs to 0 manually so the following code executes at least once.
+  middleQTIs = 0
+  DO UNTIL (middleQTIs = 1)
+    GOSUB TurnRight
+    GOSUB UpdateQTIs
+  LOOP
+RETURN
+
+'----------------------------[ Different beeps used throughout program. ]----------------------------------------
+
+Beep1:
+
+  FREQOUT 4, 40, 5000
+  FREQOUT 4, 40, 4000
+  PAUSE 100
+  FREQOUT 4, 40, 5000
+  FREQOUT 4, 40, 4000
+RETURN
+
+Beep2:
+
+  FREQOUT 4, 20, 4000
+  FREQOUT 4, 20, 5000
+RETURN
+
+Beep3:
+
+  FREQOUT 4, 40, 5000
+  FREQOUT 4, 80, 6000
+RETURN
+
+Beep4:
+
+  FREQOUT 4, 40, 5000
+  FREQOUT 4, 80, 3000
+RETURN
+
+Beep5:
+  FOR counter = 1 TO 3
+    GOSUB Beep1
+    PAUSE 40
+  NEXT
+  FREQOUT 4, 40, 6000
+RETURN
