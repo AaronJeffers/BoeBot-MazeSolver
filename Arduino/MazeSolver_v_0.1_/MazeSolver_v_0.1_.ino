@@ -5,6 +5,7 @@ bool myLastQTIs[4];
 bool QTIsChanged;
 bool middleQTIs;
 byte turn;
+int addr;
 Servo servoLeft;
 Servo servoRight;
 
@@ -13,6 +14,8 @@ void setup()
   tone(3, 300, 1000);
 
   Serial.begin(9600);
+
+  addr = 0;
 
   servoLeft.attach(12);
   servoRight.attach(11);
@@ -136,23 +139,27 @@ void check()
 
   if (myLastQTIs[0])
   {
+    turn = 64;
     pivotLeft();
-    moveAlongLine();
   }
   else if (middleQTIs)
   {
-    moveAlongLine();
+    turn = 128;
   }
   else if (myLastQTIs[3])
   {
+    turn = 192;
     pivotRight();
-    moveAlongLine();
   }
   else if (!myQTIs[0] && !middleQTIs && !myQTIs[3])
   {
+    turn = 0;
     pivotRight();
-    moveAlongLine();
   }
+  
+  EEPROM.write(addr, turn);
+  addr += 1;
+  moveAlongLine();
 }
 
 void pivotLeft()
