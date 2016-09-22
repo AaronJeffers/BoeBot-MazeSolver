@@ -1,11 +1,16 @@
 #include <Servo.h>
+#include <EEPROM.h>
 
 bool myQTIs[4];
 bool myLastQTIs[4];
 bool QTIsChanged;
 bool middleQTIs;
+bool finished;
 byte turn;
+byte mode;
 int addr;
+int startButton;
+int selectButton;
 Servo servoLeft;
 Servo servoRight;
 
@@ -15,17 +20,56 @@ void setup()
 
   Serial.begin(9600);
 
+  mode = 0;
   addr = 0;
+  finished = false;
 
   servoLeft.attach(12);
   servoRight.attach(11);
 
+  pinMode(startButton, INPUT);
+  pinMode(selectButton, INPUT);
   pinMode(13, OUTPUT);
 }
 
 void loop()
 {
-  moveAlongLine();
+   waitForInput();
+}
+
+void waitForInput()
+{
+  if (digitalRead(selectButton))
+  {
+    mode += 64;
+
+    while (digitalRead(selectButton))
+    {
+      delay(10);
+    }
+  }
+  
+  if (digitalRead(startButton))
+  {
+    if (mode == 0)
+    {
+      findFinishLine();
+    }
+    else if (mode == 64)
+    {
+      
+    }
+      else if (mode == 128)
+    {
+      solveMaze();
+    }
+      else if (mode == 192)
+    {
+      
+    }
+
+    
+  }
 }
 
 void updateQTIs()
@@ -70,6 +114,47 @@ void updateQTIs()
   }
 }
 
+void findFinishLine()
+{
+  while (!finished)
+  {
+    moveAlongLine();
+    check();
+  }
+}
+
+void solveMaze()
+{
+  addr = 0;
+  finished = false;
+
+  while (!finished)
+  {
+    moveAlongLine();
+    moveForwardOneInch();
+
+    bool b = EEPROM.read(addr)
+    if (b == 64)
+    {
+      pivotLeft();
+    }
+    else if (b == 128)
+    {
+      
+    }
+    else if (b == 192)
+    {
+      pivotRight();
+    }
+    else if (b == 7)
+    {
+      finished = true;
+    }
+
+    addr +=1;
+  }
+}
+
 void moveAlongLine()
 {
   servoLeft.writeMicroseconds(1700);
@@ -106,8 +191,6 @@ void moveAlongLine()
 
   delay(20);
   stopServos();
-
-  check();
 }
 
 bool atIntersection()
@@ -156,10 +239,25 @@ void check()
     turn = 0;
     pivotRight();
   }
+  else if (myQTIs[0] && middleQTIs && myQTIs[3])
+  {
+    turn = 7;
+    finished = true;
+  }
   
   EEPROM.write(addr, turn);
+  correctPath();
   addr += 1;
-  moveAlongLine();
+}
+
+void correctPath()
+{
+  if (EEPROM.read(addr - 1) == 0 && addr => 2)
+  {
+    byte b = EEPROM.read(addr) + EEprom.read(addr - 2);
+    addr -= 2;
+    EEPROM.write(addr, b);
+  }
 }
 
 void pivotLeft()
@@ -195,7 +293,7 @@ void pivotRight()
   delay(500);
   updateQTIs();
 
-  // Continue turning until the two middle QTIs start to detect the line.
+  // Continue turning until the two middle QTIs detect the line.
   while (myQTIs[1] == 0 && myQTIs[2] == 0)
   {
     updateQTIs();
