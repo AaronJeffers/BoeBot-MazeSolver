@@ -133,7 +133,7 @@ void solveMaze()
     moveAlongLine();
     moveForwardOneInch();
 
-    bool b = EEPROM.read(addr)
+    bool b = EEPROM.read(addr);
     if (b == 64)
     {
       pivotLeft();
@@ -252,9 +252,9 @@ void check()
 
 void correctPath()
 {
-  if (EEPROM.read(addr - 1) == 0 && addr => 2)
+  if (EEPROM.read(addr - 1) == 0 && addr >= 2)
   {
-    byte b = EEPROM.read(addr) + EEprom.read(addr - 2);
+    byte b = EEPROM.read(addr) + EEPROM.read(addr - 2);
     addr -= 2;
     EEPROM.write(addr, b);
   }
