@@ -6,7 +6,7 @@
 <setting alwaysvectorfont="no"/>
 <setting verticaltext="up"/>
 </settings>
-<grid distance="0.05" unitdist="inch" unit="inch" style="lines" multiple="1" display="yes" altdistance="0.01" altunitdist="inch" altunit="inch"/>
+<grid distance="0.1" unitdist="inch" unit="inch" style="lines" multiple="1" display="no" altdistance="0.01" altunitdist="inch" altunit="inch"/>
 <layers>
 <layer number="1" name="Top" color="4" fill="1" visible="no" active="no"/>
 <layer number="2" name="Route2" color="1" fill="3" visible="no" active="no"/>
@@ -3854,10 +3854,10 @@ Source: Samtec TSW.pdf</description>
 </class>
 </classes>
 <parts>
-<part name="R8" library="resistor" deviceset="R-US_" device="0207/7"/>
-<part name="R6" library="resistor" deviceset="R-US_" device="0207/7"/>
-<part name="R5" library="resistor" deviceset="R-US_" device="0207/7"/>
-<part name="R1" library="resistor" deviceset="R-US_" device="0207/7"/>
+<part name="R8" library="resistor" deviceset="R-US_" device="0207/7" value="10000"/>
+<part name="R6" library="resistor" deviceset="R-US_" device="0207/7" value="220"/>
+<part name="R5" library="resistor" deviceset="R-US_" device="0207/7" value="220"/>
+<part name="R1" library="resistor" deviceset="R-US_" device="0207/7" value="470"/>
 <part name="LED1" library="led" deviceset="TLLG4400" device="" value=""/>
 <part name="SP1" library="ajjeffers" deviceset="AL11P" device="" value="AL11P"/>
 <part name="S2" library="aaron" deviceset="10-XX" device=""/>
@@ -3873,10 +3873,10 @@ Source: Samtec TSW.pdf</description>
 <part name="D2" library="aaron" deviceset="1N4004" device="" value=""/>
 <part name="D3" library="aaron" deviceset="1N4004" device="" value=""/>
 <part name="D4" library="aaron" deviceset="1N4004" device="" value=""/>
-<part name="R7" library="resistor" deviceset="R-US_" device="0207/7"/>
-<part name="R2" library="resistor" deviceset="R-US_" device="0207/7"/>
-<part name="R3" library="resistor" deviceset="R-US_" device="0207/7"/>
-<part name="R4" library="resistor" deviceset="R-US_" device="0207/7"/>
+<part name="R7" library="resistor" deviceset="R-US_" device="0207/7" value="10000"/>
+<part name="R2" library="resistor" deviceset="R-US_" device="0207/7" value="470"/>
+<part name="R3" library="resistor" deviceset="R-US_" device="0207/7" value="470"/>
+<part name="R4" library="resistor" deviceset="R-US_" device="0207/7" value="470"/>
 <part name="LED2" library="led" deviceset="TLLG4400" device="" value=""/>
 <part name="LED3" library="led" deviceset="TLLG4400" device="" value=""/>
 <part name="LED4" library="led" deviceset="TLLG4400" device="" value=""/>
@@ -4337,16 +4337,8 @@ Source: Samtec TSW.pdf</description>
 <approved hash="101,1,21.59,45.72,X2-14,1,,,,"/>
 <approved hash="101,1,21.59,48.26,X2-15,1,,,,"/>
 <approved hash="101,1,21.59,50.8,X2-16,1,,,,"/>
-<approved hash="113,1,48.26,87.3548,R8,,,,,"/>
-<approved hash="113,1,53.34,28.9348,R6,,,,,"/>
-<approved hash="113,1,48.26,26.3948,R5,,,,,"/>
-<approved hash="113,1,27.94,16.2348,R1,,,,,"/>
 <approved hash="113,1,68.58,75.8105,S2,,,,,"/>
 <approved hash="113,1,68.58,91.0505,S1,,,,,"/>
-<approved hash="113,1,48.26,72.1148,R7,,,,,"/>
-<approved hash="113,1,33.02,18.7748,R2,,,,,"/>
-<approved hash="113,1,38.1,21.3148,R3,,,,,"/>
-<approved hash="113,1,43.18,23.8548,R4,,,,,"/>
 </errors>
 </schematic>
 </drawing>
