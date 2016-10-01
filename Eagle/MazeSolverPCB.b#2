@@ -199,9 +199,9 @@
 <wire x1="36.195" y1="35.2425" x2="17.145" y2="35.2425" width="0.127" layer="22"/>
 <text x="1.651" y="48.387" size="1.2192" layer="21" font="vector" ratio="14">https://github.com/AaronJeffers/BoeBot-MazeSolver</text>
 <text x="6.858" y="44.958" size="1.778" layer="21" font="vector" ratio="18">Left</text>
-<text x="39.37" y="44.958" size="1.778" layer="21" font="vector" ratio="18">Right</text>
-<text x="34.544" y="42.672" size="2.032" layer="21" font="vector" ratio="18" rot="SR270">Display</text>
-<text x="16.764" y="42.672" size="2.032" layer="21" font="vector" ratio="18" rot="SR270">Solve</text>
+<text x="39.878" y="44.958" size="1.778" layer="21" font="vector" ratio="18">Right</text>
+<text x="34.544" y="43.18" size="1.27" layer="16" font="vector" ratio="18" rot="SR270">Display</text>
+<text x="16.764" y="43.18" size="1.778" layer="21" font="vector" ratio="18" rot="SR270">Solve</text>
 <wire x1="1.524" y1="50.165" x2="51.816" y2="50.165" width="0.127" layer="21"/>
 <wire x1="51.816" y1="50.165" x2="52.324" y2="49.657" width="0.127" layer="21" curve="-90"/>
 <wire x1="52.324" y1="49.657" x2="52.324" y2="48.387" width="0.127" layer="21"/>

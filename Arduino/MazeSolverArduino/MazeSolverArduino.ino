@@ -9,13 +9,22 @@ bool finished;
 byte turn;
 byte mode;
 int addr;
-int startButton;
-int selectButton;
+int startButton = 4;
+int selectButton = 5;
 Servo servoLeft;
 Servo servoRight;
 
+/*    Pin setup
+ *    0-3   LED
+ *    4-5   Buttons
+ *    6     Speaker
+ *    7-10  QTI Sensors
+ *    11-12 Servos
+ */
+
 void setup()
 {
+  // Singnal start of program
   tone(3, 300, 1000);
 
   Serial.begin(9600);
