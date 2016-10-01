@@ -33,11 +33,19 @@ void setup()
   addr = 0;
   finished = false;
 
-  servoLeft.attach(12);
-  servoRight.attach(11);
+  pinMode(0, OUTPUT);
+  pinMode(1, OUTPUT);
+  pinMode(2, OUTPUT);
+  pinMode(3, OUTPUT);
 
   pinMode(startButton, INPUT);
   pinMode(selectButton, INPUT);
+
+  pinMode(6, OUTPUT);
+  
+  servoLeft.attach(12);
+  servoRight.attach(11);
+  
   pinMode(13, OUTPUT);
 }
 
@@ -48,25 +56,55 @@ void loop()
 
 void waitForInput()
 {
+  // Switch to next mode on button release
   if (digitalRead(selectButton))
   {
-    mode += 64;
-
     while (digitalRead(selectButton))
     {
       delay(10);
     }
+    
+    mode += 64;
+
+    pinMode(0, LOW);
+    pinMode(1, LOW);
+    pinMode(2, LOW);
+    pinMode(3, LOW);
+
+    // Light correct LED
+    if (mode == 0)
+    {
+      pinMode(0, HIGH);
+    }
+    else if (mode == 64)
+    {
+      pinMode(1, HIGH);
+    }
+    else if (mode == 128)
+    {
+      pinMode(2, HIGH);
+    }
+    else if (mode == 192)
+    {
+      pinMode(3, HIGH);
+    }
   }
-  
+
+  // Start current mode on button release
   if (digitalRead(startButton))
   {
+    while (digitalRead(startButton))
+    {
+      delay(10);
+    }
+    
     if (mode == 0)
     {
       findFinishLine();
     }
     else if (mode == 64)
     {
-      
+      displaySolution();
     }
       else if (mode == 128)
     {
@@ -74,10 +112,8 @@ void waitForInput()
     }
       else if (mode == 192)
     {
-      
-    }
-
-    
+      findFinishLine();
+    } 
   }
 }
 
@@ -326,5 +362,50 @@ void stopServos()
   servoLeft.writeMicroseconds(1500);
   servoRight.writeMicroseconds(1500);
 }
+
+void displaySolution()
+{
+  pinMode(0, LOW);
+  pinMode(1, LOW);
+  pinMode(2, LOW);
+  pinMode(3, LOW);
+
+  finished = false;
+  addr = 0;
+  
+  while(!finished)
+  {
+    byte b = EEPROM.read(addr);
+
+    if (b = 0)
+    {
+      
+    }
+    else if (b = 64)
+    {
+      pinMode(3, HIGH);
+    }
+    else if (b = 128)
+    {
+      pinMode(0, HIGH);
+      pinMode(3, HIGH);
+    }
+    else if (b = 192)
+    {
+      pinMode(0, HIGH);
+    }
+    else if (b = 7)
+    {
+      pinMode(0, HIGH);
+      pinMode(1, HIGH);
+      pinMode(2, HIGH);
+      pinMode(3, HIGH);
+      finished = true;
+    }
+
+    delay(100);
+  } 
+}
+
 
 
