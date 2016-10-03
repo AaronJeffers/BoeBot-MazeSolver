@@ -46,7 +46,7 @@ void setup()
   servoLeft.attach(12);
   servoRight.attach(11);
   
-  pinMode(13, OUTPUT);
+  //pinMode(13, OUTPUT);
 }
 
 void loop()
@@ -100,7 +100,7 @@ void waitForInput()
     
     if (mode == 0)
     {
-      findFinishLine();
+      findFinishLine(); // Right hand meathod
     }
     else if (mode == 64)
     {
@@ -112,13 +112,14 @@ void waitForInput()
     }
       else if (mode == 192)
     {
-      findFinishLine();
+      findFinishLine(); // Left hand meathod
     } 
   }
 }
 
 void updateQTIs()
 {
+  // Process for reading all QTIs. Store results in myQTIs[]
   for (int x = 0; x < 4; x++)
   {
     myLastQTIs[x] = myQTIs[x];
@@ -159,6 +160,7 @@ void updateQTIs()
   }
 }
 
+// Go through the maze and find the "Finish Line" or end of maze.
 void findFinishLine()
 {
   while (!finished)
@@ -168,6 +170,7 @@ void findFinishLine()
   }
 }
 
+// Go through the maze using the result stored in EEPROM.
 void solveMaze()
 {
   addr = 0;
@@ -200,6 +203,7 @@ void solveMaze()
   }
 }
 
+// Move along the line until an intersection is reached.
 void moveAlongLine()
 {
   servoLeft.writeMicroseconds(1700);
@@ -238,6 +242,7 @@ void moveAlongLine()
   stopServos();
 }
 
+// Check if the sensors detect an intersection.
 bool atIntersection()
 {
   if (myQTIs[0] == 1 || myQTIs[3] == 1)
@@ -250,6 +255,8 @@ bool atIntersection()
   }
 }
 
+// Move forward one inch. This is used at an intersection to see if continuing straight is an option
+// and to line up the robots pivot point to the center of the intersection.
 void moveForwardOneInch()
 {
   servoLeft.writeMicroseconds(1600);
@@ -260,6 +267,7 @@ void moveForwardOneInch()
   updateQTIs();
 }
 
+// Check what kind of intersection is detected. 
 void check()
 {
   updateQTIs();
@@ -295,6 +303,7 @@ void check()
   addr += 1;
 }
 
+// Weed out any U-turns in the maze solution.
 void correctPath()
 {
   if (EEPROM.read(addr - 1) == 0 && addr >= 2)
@@ -363,6 +372,7 @@ void stopServos()
   servoRight.writeMicroseconds(1500);
 }
 
+// Light up the LEDs to display the current maze solution stored in EEPROM.
 void displaySolution()
 {
   pinMode(0, LOW);
@@ -403,8 +413,11 @@ void displaySolution()
       finished = true;
     }
 
+    addr += 1;
     delay(100);
   } 
+
+  addr = 0;
 }
 
 
