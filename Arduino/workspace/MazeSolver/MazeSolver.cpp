@@ -25,7 +25,7 @@ Servo servoRight;
 
 void setup()
 {
-  // Singnal start of program
+  // Signal start of program
   tone(3, 300, 1000);
 
   Serial.begin(9600);
@@ -388,24 +388,24 @@ void displaySolution()
   {
     byte b = EEPROM.read(addr);
 
-    if (b = 0)
+    if (b == 0)
     {
 
     }
-    else if (b = 64)
+    else if (b == 64)
     {
       pinMode(3, HIGH);
     }
-    else if (b = 128)
+    else if (b == 128)
     {
       pinMode(0, HIGH);
       pinMode(3, HIGH);
     }
-    else if (b = 192)
+    else if (b == 192)
     {
       pinMode(0, HIGH);
     }
-    else if (b = 7)
+    else if (b == 7)
     {
       pinMode(0, HIGH);
       pinMode(1, HIGH);

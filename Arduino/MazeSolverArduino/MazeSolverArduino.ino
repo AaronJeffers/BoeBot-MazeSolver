@@ -27,8 +27,6 @@ void setup()
   // Singnal start of program
   tone(3, 300, 1000);
 
-  Serial.begin(9600);
-
   mode = 0;
   addr = 0;
   finished = false;
@@ -47,78 +45,89 @@ void setup()
   servoRight.attach(11);
   
   //pinMode(13, OUTPUT);
+
 }
 
 void loop()
 {
    waitForInput();
+   
 }
 
 void waitForInput()
 {
   // Switch to next mode on button release
-  if (digitalRead(selectButton))
+  while (!digitalRead(selectButton))
   {
-    while (digitalRead(selectButton))
-    {
-      delay(10);
-    }
+    delay(10);
     
-    mode += 64;
+    if (digitalRead(selectButton))
+    {
+      delay(100);
 
-    pinMode(0, LOW);
-    pinMode(1, LOW);
-    pinMode(2, LOW);
-    pinMode(3, LOW);
+      mode += 64;
 
-    // Light correct LED
-    if (mode == 0)
-    {
-      pinMode(0, HIGH);
-    }
-    else if (mode == 64)
-    {
-      pinMode(1, HIGH);
-    }
-    else if (mode == 128)
-    {
-      pinMode(2, HIGH);
-    }
-    else if (mode == 192)
-    {
-      pinMode(3, HIGH);
+      digitalWrite(0, LOW);
+      digitalWrite(1, LOW);
+      digitalWrite(2, LOW);
+      digitalWrite(3, LOW);
+
+      // Light correct LED
+      if (mode == 0)
+      {
+        digitalWrite(0, HIGH);
+      }
+      else if (mode == 64)
+      {
+        digitalWrite(1, HIGH);
+      }
+      else if (mode == 128)
+      {
+        digitalWrite(2, HIGH);
+      }
+      else if (mode == 192)
+      {
+        digitalWrite(3, HIGH);
+      }
     }
   }
 
   // Start current mode on button release
-  if (digitalRead(startButton))
+  while (!digitalRead(startButton))
   {
-    while (digitalRead(startButton))
+    delay(10);
+  
+    if (digitalRead(startButton))
     {
-      delay(10);
-    }
-    
-    if (mode == 0)
-    {
-      findFinishLine(); // Right hand meathod
-    }
-    else if (mode == 64)
-    {
-      displaySolution();
-    }
-      else if (mode == 128)
-    {
-      solveMaze();
-    }
-      else if (mode == 192)
-    {
-      findFinishLine(); // Left hand meathod
+      delay(100);
+          
+      if (mode == 0)
+      {
+        findFinishLine(); // Right hand meathod
+      }
+      else if (mode == 64)
+      {
+        displaySolution();
+      }
+        else if (mode == 128)
+      {
+        solveMaze();
+      }
+        else if (mode == 192)
+      {
+        findFinishLine(); // Left hand meathod
+      }
     } 
   }
 }
 
 void updateQTIs()
 {
+  //digitalWrite(0, LOW);
+  //digitalWrite(1, LOW);
+  //digitalWrite(2, LOW);
+  //digitalWrite(3, LOW);
+      
   // Process for reading all QTIs. Store results in myQTIs[]
   for (int x = 0; x < 4; x++)
   {
@@ -158,6 +167,24 @@ void updateQTIs()
       return;
     }
   }
+/*
+  if (myQTIs[0] == 1)
+  {
+    digitalWrite(0, HIGH);
+  }
+  if (myQTIs[1] == 1)
+  {
+    digitalWrite(1, HIGH);
+  }
+  if (myQTIs[2] == 1)
+  {
+    digitalWrite(2, HIGH);
+  }
+  if (myQTIs[3] == 1)
+  {
+    digitalWrite(3, HIGH);
+  }
+*/
 }
 
 // Go through the maze and find the "Finish Line" or end of maze.
@@ -212,8 +239,8 @@ void moveAlongLine()
   do
   {
     updateQTIs();
-    if (QTIsChanged)
-    {
+    //if (QTIsChanged)
+    //{
       if (myQTIs[1] == 1 && myQTIs[2] == 1)
       {
         servoLeft.writeMicroseconds(1700);
@@ -229,17 +256,18 @@ void moveAlongLine()
         servoLeft.writeMicroseconds(1550);
         servoRight.writeMicroseconds(1300);
       }
-      else if (!myQTIs[0] && !myQTIs[1] && !myQTIs[2] && !myQTIs[3])
+      else if (myQTIs[0] == 0 && myQTIs[1] == 0 && myQTIs[2] == 0 && myQTIs[3] == 0)
       {
         pivotRight();
         servoLeft.writeMicroseconds(1700);
         servoRight.writeMicroseconds(1300);
       }
-    }
+    //}
+    
   } while (!atIntersection());
 
-  delay(20);
-  stopServos();
+  //delay(20);
+  //stopServos();
 }
 
 // Check if the sensors detect an intersection.
@@ -247,6 +275,7 @@ bool atIntersection()
 {
   if (myQTIs[0] == 1 || myQTIs[3] == 1)
   {
+    stopServos();
     return true;
   }
   else
@@ -375,10 +404,10 @@ void stopServos()
 // Light up the LEDs to display the current maze solution stored in EEPROM.
 void displaySolution()
 {
-  pinMode(0, LOW);
-  pinMode(1, LOW);
-  pinMode(2, LOW);
-  pinMode(3, LOW);
+  digitalWrite(0, LOW);
+  digitalWrite(1, LOW);
+  digitalWrite(2, LOW);
+  digitalWrite(3, LOW);
 
   finished = false;
   addr = 0;
@@ -406,10 +435,10 @@ void displaySolution()
     }
     else if (b = 7)
     {
-      pinMode(0, HIGH);
-      pinMode(1, HIGH);
-      pinMode(2, HIGH);
-      pinMode(3, HIGH);
+      digitalWrite(0, HIGH);
+      digitalWrite(1, HIGH);
+      digitalWrite(2, HIGH);
+      digitalWrite(3, HIGH);
       finished = true;
     }
 
